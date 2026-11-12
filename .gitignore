@@ -1,0 +1,24 @@
+# --- 공모전 비공개 (심사용 공개 저장소에 올리지 않음) ---
+CLAUDE.md
+_dev/
+
+# --- 서명·비밀값 ---
+*.jks
+*.keystore
+keystore.properties
+local.properties
+secrets.properties
+
+# --- Android / Gradle ---
+.gradle/
+build/
+**/build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.iml
+.idea/
+.kotlin/
+
+# --- macOS ---
+.DS_Store
