@@ -38,10 +38,16 @@ class TripStateMachineTest {
         assertEquals(listOf(FinishTrip(100.0, 105.0, t(0), t(6))), sm.handle(Tick(t(6))))
     }
 
-    @Test fun `U4 P 상태에서 ODO 증가만으로 트립 시작`() {
-        sm.handle(GearChanged(Gear.P, t(0)))
+    @Test fun `U4 기어 신호 없이 ODO 증가만으로 트립 시작`() {
         sm.handle(OdometerChanged(100.0, t(0)))
         assertEquals(listOf(StartTrip(100.0, t(1))), sm.handle(OdometerChanged(101.0, t(1))))
+    }
+
+    @Test fun `기어 P가 확인된 상태의 ODO 변화는 트립이 아니다 (시연 준비 중 값 맞추기)`() {
+        sm.handle(GearChanged(Gear.P, t(0)))
+        sm.handle(OdometerChanged(0.0, t(0)))
+        assertEquals(emptyList<Any>(), sm.handle(OdometerChanged(48360.0, t(1))))
+        assertEquals(listOf(StartTrip(48360.0, t(2))), sm.handle(GearChanged(Gear.D, t(2))))
     }
 
     @Test fun `주차 브레이크 체결로도 종료`() {

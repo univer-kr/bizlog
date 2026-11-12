@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kr.univer.bizlog.data.AppDatabase
+import kr.univer.bizlog.data.AppSettings
 import kr.univer.bizlog.data.LedgerRepository
 import kr.univer.bizlog.domain.model.Category
 import kr.univer.bizlog.domain.model.Gear
@@ -86,6 +87,7 @@ class RecordingService : Service() {
 
     private suspend fun record(gateway: VehicleGateway) {
         val repo = LedgerRepository(AppDatabase.get(this))
+        val settings = AppSettings(this)
         val machine = TripStateMachine()
         val vin = gateway.vin()
         val ticks = flow { while (true) { delay(30_000); emit(TripEvent.Tick(Instant.now())) } }
@@ -107,7 +109,7 @@ class RecordingService : Service() {
                     is TripAction.StartTrip -> _state.update { it.copy(tripStartOdoKm = action.startOdoKm, tripStartedAt = action.at) }
                     is TripAction.FinishTrip -> {
                         _state.update { it.copy(tripStartOdoKm = null, tripStartedAt = null) }
-                        val saved = repo.appendTrip(action.toRecord(vin))
+                        val saved = repo.appendTrip(action.toRecord(vin, settings))
                         saved.forEach { Log.i(TAG, "장부 #${it.seq} ${it.kind} ${it.startOdoKm}→${it.endOdoKm} (${it.distanceKm} km) ${it.hash.take(8)}") }
                     }
                     TripAction.DiscardTrip -> _state.update { it.copy(tripStartOdoKm = null, tripStartedAt = null) }
@@ -116,12 +118,14 @@ class RecordingService : Service() {
         }
     }
 
-    // shortcut: 사용자·구분은 아직 비워 둠. 시트 프로필(P1)·장부 칩 지정(P0-5) 단계에서 채운다.
-    private fun TripAction.FinishTrip.toRecord(vin: String?) = LedgerRecord(
+    // shortcut: 사용자 = 설정의 프로필 1명. 시트 위치로 프로필을 고르는 건 P1.
+    private fun TripAction.FinishTrip.toRecord(vin: String?, settings: AppSettings) = LedgerRecord(
         seq = 0, id = UUID.randomUUID().toString(), kind = RecordKind.TRIP,
         date = startedAt.atZone(ZoneId.systemDefault()).toLocalDate(),
         startedAt = startedAt, endedAt = endedAt, startOdoKm = startOdoKm, endOdoKm = endOdoKm,
         category = Category.UNKNOWN, vehicleVin = vin,
+        driverId = settings.driverName.ifBlank { null }, driverName = settings.driverName.ifBlank { null },
+        driverDept = settings.driverDept.ifBlank { null },
     )
 
     private fun notification(): Notification {

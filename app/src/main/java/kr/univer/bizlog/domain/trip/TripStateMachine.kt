@@ -23,13 +23,14 @@ sealed interface TripAction {
 }
 
 /**
- * IDLE ⇄ DRIVING. 시작: 기어 D/R 또는 ODO 증가. 종료: 기어 P, 주차 브레이크, ODO가 idleTimeout 동안 정지.
+ * IDLE ⇄ DRIVING. 시작: 기어 D/R, 또는 기어 신호가 없을 때 ODO 증가(P가 확인되면 ODO 변화는 주행이 아님). 종료: 기어 P, 주차 브레이크, ODO가 idleTimeout 동안 정지.
  * 시각은 이벤트로만 받는다(결정적).
  */
 class TripStateMachine(private val idleTimeout: Duration = Duration.ofMinutes(5)) {
     private class Active(var startOdo: Double?, val startedAt: Instant, var lastMoveAt: Instant)
 
     private var lastOdo: Double? = null
+    private var lastGear: Gear = Gear.UNKNOWN
     private var trip: Active? = null
 
     val isDriving: Boolean get() = trip != null
@@ -41,7 +42,7 @@ class TripStateMachine(private val idleTimeout: Duration = Duration.ofMinutes(5)
                 val prev = lastOdo
                 lastOdo = e.km
                 when {
-                    active == null && prev != null && e.km > prev -> start(prev, e.at)
+                    active == null && prev != null && e.km > prev && lastGear != Gear.P -> start(prev, e.at)
                     active == null -> emptyList()
                     active.startOdo == null -> { // 기어 D가 ODO보다 먼저 온 경우
                         active.startOdo = e.km
@@ -53,11 +54,11 @@ class TripStateMachine(private val idleTimeout: Duration = Duration.ofMinutes(5)
                     }
                 }
             }
-            is TripEvent.GearChanged -> when {
+            is TripEvent.GearChanged -> { lastGear = e.gear; when {
                 active == null && (e.gear == Gear.D || e.gear == Gear.R) -> start(lastOdo, e.at)
                 active != null && e.gear == Gear.P -> finish(e.at)
                 else -> emptyList()
-            }
+            } }
             is TripEvent.ParkingBrake -> if (active != null && e.on) finish(e.at) else emptyList()
             is TripEvent.Tick ->
                 if (active != null && Duration.between(active.lastMoveAt, e.at) >= idleTimeout) finish(e.at) else emptyList()

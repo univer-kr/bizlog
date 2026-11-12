@@ -87,3 +87,14 @@ class AppendTripTest {
         assertEquals(OdoChain.GENESIS, OdoChain.appendTrip(null, null, draft(0.0, 3.0)).single().prevHash)
     }
 }
+
+class DemoDataTest {
+    @Test fun `데모 장부는 21_8km 누락 구간을 체인이 만들고 48360_0에서 끝난다`() {
+        var tail: kr.univer.bizlog.domain.model.LedgerRecord? = null
+        val all = kr.univer.bizlog.data.DemoData.trips().flatMap { t -> OdoChain.appendTrip(tail, tail, t).also { tail = it.last() } }
+        val gap = all.single { it.kind == kr.univer.bizlog.domain.model.RecordKind.GAP }
+        assertEquals(21.8, gap.distanceKm, 0.0)
+        assertEquals(48360.0, all.last().endOdoKm, 0.0)
+        assertEquals(ChainStatus.GapCount(1), OdoChain.verify(all))
+    }
+}
