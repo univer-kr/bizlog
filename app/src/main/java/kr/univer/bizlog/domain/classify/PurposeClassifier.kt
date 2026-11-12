@@ -41,3 +41,10 @@ class PurposeClassifier(
         return 2 * 6_371_000.0 * asin(sqrt(h))
     }
 }
+
+/** 음성 답변 한 문장을 구분으로. 출퇴근, 개인 용무 단어가 없으면 업무로 본다(질문 자체가 업무 목적을 묻는다). */
+fun categoryFromAnswer(answer: String): Category = when {
+    Regex("출근|퇴근|집으로|귀가").containsMatchIn(answer) -> Category.COMMUTE
+    Regex("개인|사적|가족|주말|비업무|볼일|쇼핑").containsMatchIn(answer) -> Category.PERSONAL
+    else -> Category.BUSINESS
+}

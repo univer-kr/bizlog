@@ -33,4 +33,10 @@ class PurposeClassifierTest {
     @Test fun `프라이버시 모드는 비업무, 장소 저장 안 함`() {
         assertEquals(Classification(Category.PERSONAL, askPurpose = false, storePlace = false), c.classify(Place("B사", poiId = "poi-b"), privacy = true))
     }
+
+    @Test fun `음성 답변을 구분으로`() {
+        assertEquals(Category.BUSINESS, kr.univer.bizlog.domain.classify.categoryFromAnswer("거래처 신규 납품 상담"))
+        assertEquals(Category.COMMUTE, kr.univer.bizlog.domain.classify.categoryFromAnswer("회사로 출근"))
+        assertEquals(Category.PERSONAL, kr.univer.bizlog.domain.classify.categoryFromAnswer("주말 가족 나들이"))
+    }
 }

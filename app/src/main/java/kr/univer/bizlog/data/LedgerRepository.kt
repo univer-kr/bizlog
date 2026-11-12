@@ -25,9 +25,14 @@ class LedgerRepository(private val db: AppDatabase) {
      * 구분 변경·누락 사유 입력. 원본은 두고 CORRECTION을 붙인다.
      * shown = 화면에 보이는(이미 정정이 반영된) 행 → 이전 정정 내용이 누적된다.
      */
-    suspend fun appendCorrection(shown: LedgerRecord, category: Category = shown.category, note: String? = shown.note) =
+    suspend fun appendCorrection(
+        shown: LedgerRecord, category: Category = shown.category, note: String? = shown.note, purpose: String? = shown.purpose,
+    ) =
         db.withTransaction {
-            val fix = shown.copy(id = UUID.randomUUID().toString(), kind = RecordKind.CORRECTION, correctsSeq = shown.seq, category = category, note = note)
+            val fix = shown.copy(
+                id = UUID.randomUUID().toString(), kind = RecordKind.CORRECTION, correctsSeq = shown.seq,
+                category = category, note = note, purpose = purpose,
+            )
             dao.insertAll(listOf(OdoChain.seal(dao.tail()?.toDomain(), fix).toEntity()))
         }
 

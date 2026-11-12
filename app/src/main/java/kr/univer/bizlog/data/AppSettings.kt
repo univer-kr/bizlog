@@ -31,5 +31,10 @@ class AppSettings(context: Context) {
         get() = prefs.getBoolean("devTools", false)
         set(v) = prefs.edit().putBoolean("devTools", v).apply()
 
+    /** 시연용: 마이크 대신 녹음된 답변을 음성 인식에 넣는다. */
+    var demoVoice: Boolean
+        get() = prefs.getBoolean("demoVoice", false)
+        set(v) = prefs.edit().putBoolean("demoVoice", v).apply()
+
     fun csvHeader(year: Int) = CsvHeader(year, companyName, bizRegNo, carModel, plateNo)
 }

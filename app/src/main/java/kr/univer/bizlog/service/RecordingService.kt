@@ -41,8 +41,19 @@ import kr.univer.bizlog.domain.trip.TripStateMachine
 import kr.univer.bizlog.gateway.VehicleGateway
 import kr.univer.bizlog.gateway.fake.FakeVehicleGateway
 import kr.univer.bizlog.gateway.pleos.PleosVehicleGateway
+import kr.univer.bizlog.gateway.pleos.PleosVoiceGateway
+import kr.univer.bizlog.gateway.VoiceGateway
+import kr.univer.bizlog.domain.classify.categoryFromAnswer
 
 private const val TAG = "BizLog"
+
+/** 정차 직후 목적 질문의 진행 상태. */
+data class PurposeAsk(
+    val trip: LedgerRecord,
+    val phase: Phase,
+    val answer: String? = null,
+    val category: Category? = null,
+) { enum class Phase { ASKING, LISTENING, RECORDED, NOT_HEARD } }
 
 /** 화면이 구독하는 실시간 상태. 서비스가 유일한 작성자. */
 data class LiveState(
@@ -51,6 +62,7 @@ data class LiveState(
     val parkingBrakeOn: Boolean = false,
     val tripStartOdoKm: Double? = null,
     val tripStartedAt: Instant? = null,
+    val ask: PurposeAsk? = null,
 )
 
 /** 포그라운드 기록 서비스: 차량 신호 → 상태머신 → 장부 append. 화면이 꺼져도 기록이 이어진다. */
@@ -60,10 +72,14 @@ class RecordingService : Service() {
         val state: StateFlow<LiveState> = _state
 
         fun start(context: Context) = context.startForegroundService(Intent(context, RecordingService::class.java))
+
+        /** 화면에서 버튼으로 고르거나 닫았을 때. */
+        fun dismissAsk() = _state.update { it.copy(ask = null) }
     }
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var vehicle: Vehicle? = null
+    private var voice: VoiceGateway? = null
     private var started = false
 
     override fun onBind(intent: Intent?): IBinder? = null
@@ -106,16 +122,42 @@ class RecordingService : Service() {
             for (action in machine.handle(event)) {
                 Log.i(TAG, "$event → $action")
                 when (action) {
-                    is TripAction.StartTrip -> _state.update { it.copy(tripStartOdoKm = action.startOdoKm, tripStartedAt = action.at) }
+                    is TripAction.StartTrip -> _state.update { it.copy(tripStartOdoKm = action.startOdoKm, tripStartedAt = action.at, ask = null) }
                     is TripAction.FinishTrip -> {
                         _state.update { it.copy(tripStartOdoKm = null, tripStartedAt = null) }
                         val saved = repo.appendTrip(action.toRecord(vin, settings))
                         saved.forEach { Log.i(TAG, "장부 #${it.seq} ${it.kind} ${it.startOdoKm}→${it.endOdoKm} (${it.distanceKm} km) ${it.hash.take(8)}") }
+                        val trip = saved.last()
+                        if (trip.category == Category.UNKNOWN) scope.launch { askPurpose(repo, trip) }
                     }
                     TripAction.DiscardTrip -> _state.update { it.copy(tripStartOdoKm = null, tripStartedAt = null) }
                 }
             }
         }
+    }
+
+    /**
+     * 정차 직후 한 번 묻고 한마디로 끝낸다. 답을 못 들으면 화면이 버튼으로 대신한다.
+     * shortcut: 내비 목적지 연동 전이라 미분류 트립마다 묻는다. NaviHelper(P1-4) 뒤엔 처음 방문지에서만 묻는다.
+     */
+    private suspend fun askPurpose(repo: LedgerRepository, trip: LedgerRecord) {
+        val v = voice ?: PleosVoiceGateway(applicationContext) { AppSettings(this).demoVoice }.also { voice = it }
+        fun set(ask: PurposeAsk?) = _state.update { if (it.tripStartedAt == null) it.copy(ask = ask) else it }
+        set(PurposeAsk(trip, PurposeAsk.Phase.ASKING))
+        v.speak("도착했어요. 이번 운행은 어떤 업무였나요?")
+        if (_state.value.ask?.trip?.seq != trip.seq) return // 그새 버튼으로 골랐거나 다시 출발
+        set(PurposeAsk(trip, PurposeAsk.Phase.LISTENING))
+        val answer = v.listenOnce()
+        if (_state.value.ask?.trip?.seq != trip.seq) return
+        if (answer == null) { set(PurposeAsk(trip, PurposeAsk.Phase.NOT_HEARD)); return }
+        val category = categoryFromAnswer(answer)
+        repo.appendCorrection(trip, category = category, purpose = answer)
+        set(PurposeAsk(trip, PurposeAsk.Phase.RECORDED, answer, category))
+        v.speak("${category.spoken()}로 기록했어요")
+    }
+
+    private fun Category.spoken() = when (this) {
+        Category.COMMUTE -> "출퇴근"; Category.BUSINESS -> "일반 업무"; Category.PERSONAL -> "비업무"; Category.UNKNOWN -> "미분류"
     }
 
     // shortcut: 사용자 = 설정의 프로필 1명. 시트 위치로 프로필을 고르는 건 P1.
@@ -142,6 +184,7 @@ class RecordingService : Service() {
     override fun onDestroy() {
         runBlocking { scope.coroutineContext[kotlinx.coroutines.Job]?.cancelAndJoin() } // 구독 해제 끝난 뒤
         vehicle?.release()
+        voice?.release()
         super.onDestroy()
     }
 }

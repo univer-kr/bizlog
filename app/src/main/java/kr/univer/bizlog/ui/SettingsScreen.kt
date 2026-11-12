@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -94,6 +95,12 @@ fun SettingsScreen(repo: LedgerRepository, settings: AppSettings, live: LiveStat
                     ActionRow(
                         Icons.Outlined.Edit, "장부 변조 시뮬레이션", "첫 트립의 도착 거리를 저장소에서 직접 1km 늘려요",
                         { scope.launch { message = if (repo.tamperForDemo() > 0) "첫 트립을 고쳤어요. 운행 기록에서 체인을 확인해 보세요" else "고칠 트립이 없어요" } },
+                    )
+                    Hairline()
+                    var demoVoice by remember { mutableStateOf(settings.demoVoice) }
+                    ActionRow(
+                        Icons.Outlined.PlayArrow, "녹음된 답변으로 음성 인식", "마이크 대신 \"거래처 신규 납품 상담\" 음성을 넣어요",
+                        { demoVoice = !demoVoice; settings.demoVoice = demoVoice }, trailing = if (demoVoice) "켜짐" else "꺼짐",
                     )
                     Hairline()
                     ActionRow(

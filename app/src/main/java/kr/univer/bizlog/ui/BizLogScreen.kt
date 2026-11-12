@@ -59,12 +59,14 @@ fun BizLogScreen(repo: LedgerRepository, settings: AppSettings) {
                 T("비즈로그", bzText(30.sp, Bz.ink, FontWeight.SemiBold))
             }
             Spacer(Modifier.width(40.dp))
-            if (!driving) Segmented(Tab.entries.map { it.title }, tab.ordinal) { tab = Tab.entries[it] }
+            if (!driving && live.ask == null) Segmented(Tab.entries.map { it.title }, tab.ordinal) { tab = Tab.entries[it] }
             Spacer(Modifier.weight(1f))
             GearState(live.gear, driving)
         }
         Box(Modifier.fillMaxSize().padding(start = Bz.pad, end = Bz.pad, bottom = Bz.pad)) {
+            val ask = live.ask
             if (driving) DrivingScreen(live, settings, chain)
+            else if (ask != null) PurposeScreen(repo, ask)
             else when (tab) {
                 Tab.LEDGER -> LedgerScreen(repo, records, chain)
                 Tab.EXPORT -> ExportScreen(records, chain, settings)
