@@ -39,7 +39,8 @@ import kr.univer.bizlog.service.LiveState
 @Composable
 fun DrivingScreen(live: LiveState, settings: AppSettings, chain: ChainStatus) {
     var now by remember { mutableStateOf(Instant.now()) }
-    LaunchedEffect(Unit) { while (true) { now = Instant.now(); delay(1_000) } }
+    // 주행 중 화면 변화를 줄이려고 분 단위로만 갱신(Pleos 주행 안전 가이드)
+    LaunchedEffect(Unit) { while (true) { now = Instant.now(); delay(15_000) } }
     val tripKm = live.tripStartOdoKm?.let { start -> live.odometerKm?.let { round1(it - start) } } ?: 0.0
     val elapsed = live.tripStartedAt?.let { Duration.between(it, now) } ?: Duration.ZERO
 
@@ -112,7 +113,7 @@ private fun DrumCell(text: String, fg: androidx.compose.ui.graphics.Color, bg: a
     }
 
 private fun clock(d: Duration): String {
-    val h = d.toHours(); val m = d.toMinutes() % 60; val s = d.seconds % 60
-    return if (h > 0) "%d:%02d:%02d".format(h, m, s) else "%02d:%02d".format(m, s)
+    val h = d.toHours(); val m = d.toMinutes() % 60
+    return if (h > 0) "${h}시간 ${m}분" else "${m}분"
 }
 

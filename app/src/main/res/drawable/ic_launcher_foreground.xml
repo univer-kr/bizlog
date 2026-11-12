@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 장부 세 줄을 잇는 체인 선. 마지막 기록만 라임. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:strokeColor="#85858B" android:strokeWidth="2.5" android:pathData="M40,38 L40,70" />
+    <path android:fillColor="#EDEDED" android:pathData="M40,38m-4.5,0a4.5,4.5 0,1 1,9 0a4.5,4.5 0,1 1,-9 0" />
+    <path android:fillColor="#EDEDED" android:pathData="M40,54m-4.5,0a4.5,4.5 0,1 1,9 0a4.5,4.5 0,1 1,-9 0" />
+    <path android:fillColor="#D6FD70" android:pathData="M40,70m-5.5,0a5.5,5.5 0,1 1,11 0a5.5,5.5 0,1 1,-11 0" />
+    <path android:strokeColor="#A1A1A6" android:strokeWidth="4" android:strokeLineCap="round" android:pathData="M52,38 L72,38" />
+    <path android:strokeColor="#A1A1A6" android:strokeWidth="4" android:strokeLineCap="round" android:pathData="M52,54 L68,54" />
+    <path android:strokeColor="#D6FD70" android:strokeWidth="4" android:strokeLineCap="round" android:pathData="M52,70 L74,70" />
+</vector>

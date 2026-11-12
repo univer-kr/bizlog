@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -16,6 +18,31 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "0.1.0"
+    }
+
+    // 서명 키는 저장소 밖(~/keys/bizlog)에서 읽는다. 없으면 release는 서명 없이 빌드된다.
+    val keyProps = Properties().apply {
+        val f = rootProject.file("keystore.properties").takeIf { it.exists() }
+            ?: file("${System.getProperty("user.home")}/keys/bizlog/keystore.properties")
+        if (f.exists()) f.inputStream().use { load(it) }
+    }
+    signingConfigs {
+        if (keyProps.isNotEmpty()) create("release") {
+            storeFile = file(keyProps.getProperty("storeFile"))
+            storePassword = keyProps.getProperty("storePassword")
+            keyAlias = keyProps.getProperty("keyAlias")
+            keyPassword = keyProps.getProperty("keyPassword")
+            enableV2Signing = true
+            enableV3Signing = true // Pleos 보안 요건: 서명 키 로테이션(v3)
+        }
+    }
+    buildTypes {
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            signingConfig = signingConfigs.findByName("release")
+        }
     }
 
     compileOptions {

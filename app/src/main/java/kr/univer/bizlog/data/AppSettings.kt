@@ -26,5 +26,10 @@ class AppSettings(context: Context) {
         get() = prefs.getString("plateNo", "")!!
         set(v) = prefs.edit().putString("plateNo", v).apply()
 
+    /** 시연 도구 표시 여부. 워드마크를 다섯 번 누르면 바뀐다. */
+    var devTools: Boolean
+        get() = prefs.getBoolean("devTools", false)
+        set(v) = prefs.edit().putBoolean("devTools", v).apply()
+
     fun csvHeader(year: Int) = CsvHeader(year, companyName, bizRegNo, carModel, plateNo)
 }

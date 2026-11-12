@@ -33,5 +33,6 @@ class CsvExporterTest {
     @Test fun `파일명은 연도와 차량번호`() {
         assertEquals("운행기록부_2026_12가3456.csv", CsvExporter.fileName(2026, plateNo = "12가3456", vin = "KMHXX00000A123456"))
         assertEquals("운행기록부_2026_123456.csv", CsvExporter.fileName(2026, plateNo = "", vin = "KMHXX00000A123456"))
+        assertEquals("운행기록부_2026_12가3456.csv", CsvExporter.fileName(2026, plateNo = "12가 3456/\"", vin = null))
     }
 }

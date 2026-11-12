@@ -46,13 +46,18 @@ fun BizLogScreen(repo: LedgerRepository, settings: AppSettings) {
     val chain = remember(records) { OdoChain.verify(records) }
     val driving = restricted || live.gear == Gear.D || live.gear == Gear.R || live.tripStartOdoKm != null
     var tab by rememberSaveable { mutableStateOf(Tab.LEDGER) }
+    var devTools by remember { mutableStateOf(settings.devTools) }
+    var taps by remember { mutableStateOf(0) }
 
     Column(Modifier.fillMaxSize().background(Bz.page)) {
         Row(
             Modifier.fillMaxWidth().height(104.dp).padding(horizontal = Bz.pad),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            T("비즈로그", bzText(30.sp, Bz.ink, FontWeight.SemiBold))
+            // 시연 도구(데모 장부, 변조 시뮬레이션)는 숨김. 워드마크 다섯 번 = 켜고 끄기
+            Pressable({ if (++taps >= 5) { taps = 0; devTools = !devTools; settings.devTools = devTools; tab = Tab.SETTINGS } }, enabled = !driving) {
+                T("비즈로그", bzText(30.sp, Bz.ink, FontWeight.SemiBold))
+            }
             Spacer(Modifier.width(40.dp))
             if (!driving) Segmented(Tab.entries.map { it.title }, tab.ordinal) { tab = Tab.entries[it] }
             Spacer(Modifier.weight(1f))
@@ -63,7 +68,7 @@ fun BizLogScreen(repo: LedgerRepository, settings: AppSettings) {
             else when (tab) {
                 Tab.LEDGER -> LedgerScreen(repo, records, chain)
                 Tab.EXPORT -> ExportScreen(records, chain, settings)
-                Tab.SETTINGS -> SettingsScreen(repo, settings, live)
+                Tab.SETTINGS -> SettingsScreen(repo, settings, live, devTools)
             }
         }
     }
@@ -73,10 +78,10 @@ fun BizLogScreen(repo: LedgerRepository, settings: AppSettings) {
 @Composable
 private fun Segmented(items: List<String>, selected: Int, onSelect: (Int) -> Unit) {
     val outer = RoundedCornerShape(18.dp)
-    Row(Modifier.background(Bz.card, outer).border(1.dp, Bz.hairline, outer).padding(6.dp)) {
+    Row(Modifier.background(Bz.card, outer).border(1.dp, Bz.hairline, outer).padding(4.dp)) {
         items.forEachIndexed { i, label ->
             val on = i == selected
-            Pressable({ onSelect(i) }, modifier = Modifier.height(64.dp).background(if (on) Bz.raisedHi else Bz.card, RoundedCornerShape(12.dp))) {
+            Pressable({ onSelect(i) }, modifier = Modifier.height(Bz.touch).background(if (on) Bz.raisedHi else Bz.card, RoundedCornerShape(12.dp))) {
                 T(label, bzText(23.sp, if (on) Bz.ink else Bz.secondary, FontWeight.Medium), Modifier.align(Alignment.Center).padding(horizontal = 28.dp))
             }
         }

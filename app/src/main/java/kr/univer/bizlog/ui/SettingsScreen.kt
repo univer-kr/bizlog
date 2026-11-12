@@ -42,7 +42,7 @@ import kr.univer.bizlog.service.LiveState
 
 /** 설정: 운전자, 법인 정보(정차 중에만 입력) + 시연 도구. */
 @Composable
-fun SettingsScreen(repo: LedgerRepository, settings: AppSettings, live: LiveState) {
+fun SettingsScreen(repo: LedgerRepository, settings: AppSettings, live: LiveState, devTools: Boolean) {
     val scope = rememberCoroutineScope()
     var message by remember { mutableStateOf<String?>(null) }
     var armed by remember { mutableStateOf<String?>(null) } // 지우는 동작은 두 번 눌러야 실행
@@ -82,7 +82,7 @@ fun SettingsScreen(repo: LedgerRepository, settings: AppSettings, live: LiveStat
             }
         }
         Column(Modifier.weight(1f).fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(Bz.gap)) {
-            Panel(Modifier.fillMaxWidth(), padding = 40.dp) {
+            if (devTools) Panel(Modifier.fillMaxWidth(), padding = 40.dp) {
                 Column {
                     T("시연 도구", bzText(30.sp, Bz.ink, FontWeight.Medium))
                     Spacer(Modifier.height(16.dp))

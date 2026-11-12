@@ -42,6 +42,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import java.time.LocalDate
 import kotlinx.coroutines.launch
 import kr.univer.bizlog.data.LedgerRepository
 import kr.univer.bizlog.domain.chain.ChainStatus
@@ -61,7 +62,7 @@ fun Category.label() = when (this) {
 
 fun LedgerRecord.dayLabel() = "${date.monthValue}월 ${date.dayOfMonth}일"
 
-private val rowHeight = 84.dp
+private val rowHeight = 92.dp
 private val chainWidth = 40.dp
 
 /** 체인 선 한 구간의 모양. 시그니처: 이어짐, 점선(누락), 끊김(변조). */
@@ -171,16 +172,21 @@ fun LedgerScreen(repo: LedgerRepository, records: List<LedgerRecord>, chain: Cha
 
 /** 업무사용비율 + 구분별 한 줄 막대. 업무용(출퇴근 + 일반 업무)만 라임. */
 @Composable
-private fun RatioPanel(records: List<LedgerRecord>) {
+private fun RatioPanel(all: List<LedgerRecord>) {
+    val year = LocalDate.now().year
+    val records = remember(all) { all.filter { it.date.year == year } } // "올해" = 이번 사업연도만
     val rows = remember(records) { LedgerCalculator.effective(records) }
     val summary = remember(records) { LedgerCalculator.summarize(records) }
-    fun km(c: Category, gap: Boolean = false) = round1(rows.filter { (it.kind == RecordKind.GAP) == gap && (gap || it.category == c) }.sumOf { it.distanceKm })
+    val corrected = remember(records) { records.mapNotNull { it.correctsSeq }.toSet() }
+    fun km(c: Category) = round1(rows.filter { it.kind != RecordKind.GAP && it.category == c }.sumOf { it.distanceKm })
+    fun gapKm(resolved: Boolean) = round1(rows.filter { it.kind == RecordKind.GAP && (it.seq in corrected) == resolved }.sumOf { it.distanceKm })
     val parts = listOf(
         Triple("일반 업무", km(Category.BUSINESS), Bz.lime),
         Triple("출퇴근", km(Category.COMMUTE), Bz.lime.copy(alpha = 0.45f)),
         Triple("비업무", km(Category.PERSONAL), Color(0xFF4A4A50)),
         Triple("미분류", km(Category.UNKNOWN), Color(0xFF34343A)),
-        Triple("확인 필요", km(Category.UNKNOWN, gap = true), Bz.pink.copy(alpha = 0.7f)),
+        Triple("사유를 남긴 구간", gapKm(resolved = true), Color(0xFF3E3E44)),
+        Triple("확인 필요", gapKm(resolved = false), Bz.pink.copy(alpha = 0.7f)),
     ).filter { it.second > 0 }
 
     Panel(Modifier.fillMaxWidth()) {
@@ -242,7 +248,7 @@ private fun CategoryPicker(current: Category, onPick: (Category) -> Unit) {
     var open by remember { mutableStateOf(false) }
     val unset = current == Category.UNKNOWN
     Box {
-        Pressable({ open = true }, modifier = Modifier.width(184.dp).height(56.dp).background(if (unset) Bz.raisedHi else Bz.raised, RoundedCornerShape(12.dp))) {
+        Pressable({ open = true }, modifier = Modifier.width(184.dp).height(Bz.touch).background(if (unset) Bz.raisedHi else Bz.raised, RoundedCornerShape(12.dp))) {
             Row(Modifier.fillMaxHeight().padding(start = 20.dp, end = 12.dp), verticalAlignment = Alignment.CenterVertically) {
                 T(current.label(), bzText(23.sp, if (unset) Bz.ink else Bz.secondary, FontWeight.Medium), Modifier.weight(1f))
                 Icon(Icons.Rounded.KeyboardArrowDown, null, tint = Bz.muted, modifier = Modifier.width(28.dp))

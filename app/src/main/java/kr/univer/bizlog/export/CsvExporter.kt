@@ -45,7 +45,7 @@ object CsvExporter {
     /** 운행기록부_<연도>_<차량번호 또는 VIN 끝 6자리>.csv */
     fun fileName(year: Int, plateNo: String?, vin: String?): String {
         val car = plateNo?.takeIf { it.isNotBlank() } ?: vin?.takeLast(6) ?: "차량"
-        return "운행기록부_${year}_$car.csv"
+        return "운행기록부_${year}_${car.replace(Regex("[^0-9A-Za-z가-힣_-]"), "")}.csv" // 파일명에 쓸 수 없는 문자 제거
     }
 
     private fun row(r: LedgerRecord): List<String> {

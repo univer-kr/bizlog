@@ -21,6 +21,7 @@ import kr.univer.bizlog.domain.model.Gear
 import kr.univer.bizlog.gateway.VehicleGateway
 
 private const val TAG = "BizLog"
+private val VIN = Regex("[A-HJ-NPR-Z0-9]{17}")
 
 /** Pleos Vehicle SDK 구현. Capability 확인 → 현재값 Get → Callback 구독 순서. */
 class PleosVehicleGateway(private val vehicle: Vehicle) : VehicleGateway {
@@ -88,7 +89,8 @@ class PleosVehicleGateway(private val vehicle: Vehicle) : VehicleGateway {
         val carInfo = vehicle.getCarInfo()
         carInfo.checkVINInfoCapabilities({ config ->
             if (config.accessType == AccessType.NONE) cont.resume(null)
-            else carInfo.getVINInfo({ cont.resume(it) }, { Log.w(TAG, "VIN 조회 실패", it); cont.resume(null) })
+            // 차량이 준 값을 그대로 믿지 않는다: VIN 형식(17자리, I·O·Q 제외)이 아니면 없는 것으로(에뮬레이터는 임의 문자열을 준다)
+            else carInfo.getVINInfo({ raw -> cont.resume(raw?.trim()?.uppercase()?.takeIf { VIN.matches(it) }) }, { Log.w(TAG, "VIN 조회 실패", it); cont.resume(null) })
         }, { cont.resume(null) })
     }
 }
