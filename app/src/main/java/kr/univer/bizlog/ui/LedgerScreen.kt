@@ -153,7 +153,7 @@ fun LedgerScreen(repo: LedgerRepository, records: List<LedgerRecord>, chain: Cha
                     "${brokenFrom}번째 기록의 숫자가 저장할 때의 해시와 맞지 않아요. 그 뒤 기록도 함께 의심 표시돼요.",
                 )
                 openGaps.isNotEmpty() -> {
-                    val g = openGaps.first()
+                    val g = openGaps.last() // 방금 생긴 구간부터 묻는다
                     Notice(
                         "확인이 필요한 구간 ${openGaps.size}건",
                         "${g.dayLabel()} ${fmt1(g.distanceKm)}km는 앱이 꺼진 동안 움직인 거리예요. 정비나 탁송이었다면 사유를 남겨 주세요.",
