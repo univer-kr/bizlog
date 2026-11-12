@@ -1,6 +1,7 @@
 package kr.univer.bizlog.domain.chain
 
 import java.security.MessageDigest
+import kr.univer.bizlog.domain.model.Category
 import kr.univer.bizlog.domain.model.LedgerRecord
 import kr.univer.bizlog.domain.model.RecordKind
 import kr.univer.bizlog.domain.model.fmt1
@@ -50,6 +51,26 @@ object OdoChain {
     fun seal(prev: LedgerRecord?, draft: LedgerRecord): LedgerRecord {
         val linked = draft.copy(seq = (prev?.seq ?: 0) + 1, prevHash = prev?.hash ?: GENESIS)
         return linked.copy(hash = hash(linked))
+    }
+
+    /**
+     * 새 TRIP을 붙일 레코드 목록. 직전 도착 ODO와 차이가 있으면 GAP을 먼저 만든다.
+     * tail = 체인 마지막(정정 포함), lastOdo = 마지막 TRIP·GAP.
+     */
+    fun appendTrip(tail: LedgerRecord?, lastOdo: LedgerRecord?, trip: LedgerRecord): List<LedgerRecord> {
+        val c = continuity(lastOdo?.endOdoKm, trip.startOdoKm)
+        val gap = if (c is Continuity.Gap && lastOdo != null) seal(
+            tail,
+            trip.copy(
+                id = trip.id + "-gap", kind = RecordKind.GAP, category = Category.UNKNOWN,
+                startedAt = lastOdo.endedAt, endedAt = trip.startedAt,
+                startOdoKm = c.fromOdoKm, endOdoKm = c.toOdoKm,
+                driverId = null, driverName = null, driverDept = null,
+                purpose = null, placeName = null, passengers = 0, note = null,
+            ),
+        ) else null
+        val t = if (c is Continuity.Discontinuity) trip.copy(note = DISCONTINUITY_NOTE) else trip
+        return listOfNotNull(gap) + seal(gap ?: tail, t)
     }
 
     /** 해시 재계산 + prevHash 연결 + ODO 연속성. 처음 깨진 곳을 돌려준다. */

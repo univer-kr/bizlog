@@ -8,6 +8,8 @@
     <uses-permission android:name="pleos.car.permission.CAR_ENERGY" />
     <uses-permission android:name="pleos.car.permission.CAR_SEATS" />
     <uses-permission android:name="pleos.car.permission.CAR_INFO" />
+    <!-- 주차 브레이크 경고등(Safety Telltales): SDK가 PRIVATE_CAR_SAFETY를 요구. 거부되면 기어 P만으로 종료 -->
+    <uses-permission android:name="pleos.car.permission.PRIVATE_CAR_SAFETY" />
     <!-- NaviHelper -->
     <uses-permission android:name="pleos.car.permission.NAVI_ROUTE" />
     <!-- TTS / STT -->
@@ -17,6 +19,7 @@
     <uses-permission android:name="android.car.permission.CAR_POWERTRAIN" />
     <!-- 기록 서비스 -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <application
@@ -31,5 +34,22 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".service.RecordingService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse">
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="법정 운행기록부: 주행 중 계기판 거리를 계속 기록" />
+        </service>
+
+        <receiver
+            android:name=".service.BootReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

@@ -60,3 +60,30 @@ class OdoChainTest {
         assertEquals(OdoChain.GENESIS, r.prevHash)
     }
 }
+
+class AppendTripTest {
+    private val prev = chainOf(draft(48360.0, 48368.0))
+
+    @Test fun `E4 앱 밖에서 22km 움직였으면 GAP 다음 TRIP, 체인은 이어진다`() {
+        val out = OdoChain.appendTrip(prev.last(), prev.last(), draft(48390.0, 48393.0))
+        assertEquals(listOf(kr.univer.bizlog.domain.model.RecordKind.GAP, kr.univer.bizlog.domain.model.RecordKind.TRIP), out.map { it.kind })
+        assertEquals(22.0, out[0].distanceKm, 0.0)
+        assertEquals(null, out[0].driverName)
+        assertEquals(ChainStatus.GapCount(1), OdoChain.verify(prev + out))
+    }
+
+    @Test fun `이어지면 TRIP 하나만`() {
+        val out = OdoChain.appendTrip(prev.last(), prev.last(), draft(48368.0, 48371.0))
+        assertEquals(1, out.size)
+        assertEquals(ChainStatus.Ok, OdoChain.verify(prev + out))
+    }
+
+    @Test fun `ODO가 줄었으면 불연속 비고`() {
+        val out = OdoChain.appendTrip(prev.last(), prev.last(), draft(100.0, 110.0))
+        assertEquals(OdoChain.DISCONTINUITY_NOTE, out.single().note)
+    }
+
+    @Test fun `첫 트립은 GENESIS에 붙는다`() {
+        assertEquals(OdoChain.GENESIS, OdoChain.appendTrip(null, null, draft(0.0, 3.0)).single().prevHash)
+    }
+}
