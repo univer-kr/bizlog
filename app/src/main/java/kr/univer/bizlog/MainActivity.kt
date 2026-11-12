@@ -19,7 +19,7 @@ class MainActivity : ComponentActivity() {
         val repo = LedgerRepository(AppDatabase.get(this))
         val settings = AppSettings(this)
         setContent {
-            MaterialTheme(colorScheme = darkColorScheme(surface = Bz.panel, onSurface = Bz.ink, primary = Bz.lime)) {
+            MaterialTheme(colorScheme = darkColorScheme(surface = Bz.raisedHi, onSurface = Bz.ink, primary = Bz.ink, background = Bz.page)) {
                 BizLogScreen(repo, settings)
             }
         }
