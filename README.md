@@ -82,7 +82,8 @@ kr.univer.bizlog
 
 ## 시연 영상
 
-<YouTube 링크>
+- https://youtu.be/KPo1FUw3WQ8 (1분 52초, YouTube 일부 공개)
+- Pleos Connect Emulator v2.1.0과 Virtual Console로 실제 구동한 화면입니다. 앱의 음성 안내는 자막으로 표시했고, 운전자 답변은 에뮬레이터 마이크 대신 녹음 음성을 SpeechToText에 넣은 소리입니다.
 
 ## 라이선스
 
